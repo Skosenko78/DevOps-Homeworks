@@ -148,7 +148,10 @@ diff --git a/plugins.go b/plugins.go
 ```
 
 # *7. Кто автор функции synchronizedWriters?*
-Не смог найти упоминание функции 'synchronizedWriters'. Использовал команду:
+Автор 'Martin Atkins'. Получено из вывода команды:
+
 ```
-git grep -p 'synchronizedWriters'
+git log -S 'func synchronizedWriters' --pretty=format:'%h %an %ad %s'
+bdfea50cc James Bardin Mon Nov 30 18:02:04 2020 -0500 remove unused
+5ac311e2a Martin Atkins Wed May 3 16:25:41 2017 -0700 main: synchronize writes to VT100-faker on Windows
 ```
