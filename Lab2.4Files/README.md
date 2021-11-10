@@ -83,6 +83,7 @@ git log --graph b8d720
 ...
 ```
 # *4. Перечислите хеши и комментарии всех коммитов которые были сделаны между тегами v0.12.23 и v0.12.24.*
+```
 33ff1c03b (tag: v0.12.24) v0.12.24
 b14b74c49 [Website] vmc provider links
 3f235065b Update CHANGELOG.md
@@ -93,6 +94,7 @@ d5f9411f5 command: Fix bug when using terraform login on Windows
 4b6d06cc5 Update CHANGELOG.md
 dd01a3507 Update CHANGELOG.md
 225466bc3 Cleanup after v0.12.23 release
+```
 
 Данные получены командой:
 ```
@@ -101,6 +103,7 @@ git log --oneline v0.12.23..v0.12.24
 
 # *5. Найдите коммит в котором была создана функция func providerSource, ее определение в коде выглядит так func providerSource(...) (вместо троеточего перечислены аргументы).*
 Коммит в котором была создана функция: 8c928e83589d90a031f811fae52a81be7153e82f
+
 Информация получена командой:
 ```
 git log --pretty=short -S 'func providerSource('
@@ -144,7 +147,7 @@ diff --git a/plugins.go b/plugins.go
 ```
 
 # *7. Кто автор функции synchronizedWriters?*
-Не смог найти уопминание функции 'synchronizedWriters'. Использовал команду:
+Не смог найти упоминание функции 'synchronizedWriters'. Использовал команду:
 ```
 git grep -p 'synchronizedWriters'
 ```
