@@ -43,8 +43,9 @@ ls: cannot access 'nofile': No such file or directory
 # *5. Получится ли одновременно передать команде файл на stdin и вывести ее stdout в другой файл?*
 Да, получится:
 ```
-vagrant@vagrant:~$ man bash | grep HISTSIZE > man.bash.histsize
+vagrant@vagrant:~$ more < stdin.file > stdout.file
 ```
+В файле stdout.file будет содержимое файла stdin.file.
 
 # *6. Возможно ли вывести данные из PTY в какой-либо из эмуляторов TTY?*
 Да, возможно:
