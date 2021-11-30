@@ -36,7 +36,19 @@ s_kosenko@linuxvb:~/NETOLOGY/Lab3.6Files$
 
 # *2. Использование консоли разработчика F12 в браузере*
 
-Нет, не могут. Жесткие ссылки указывают на один индексный дескриптор, а права доступа и владелец хранятся в бинарных полях индексного дескриптора.
+На запрос страницы по адресу 'http://stackoverflow.com' первый ответ:
+
+Request URL: http://stackoverflow.com/
+Request Method: GET
+Status Code: 307 Internal Redirect
+Referrer Policy: strict-origin-when-cross-origin
+
+Так же в ответе есть ссылка для перенаправления: 'Location: https://stackoverflow.com/'
+
+Страница загружалась 1.73 s. Дольше всего обрабатывался запрос с типом 'document'. Длился 338 ms и завершился с кодом 200
+
+![alt text](Screenshots/httpF12.png "Консоль браузера")
+
 
 # *3. Создайте виртуальную машину с новой конфигурацией*
 
