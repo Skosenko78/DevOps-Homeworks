@@ -53,7 +53,7 @@ for keys in hosts_dict:
   fjson.write(json.dumps(hosts_dict))
   fjson.close()
   fyaml = open ('http_hosts.yml', 'w')
-  fyaml.write(yaml.dump(hosts_dict, indent=3))
+  yaml.dump(hosts_dict, fyaml)
   fyaml.close()
 
 while True:
@@ -65,7 +65,7 @@ while True:
       with open ('http_hosts.json', 'w') as fjson:
         fjson.write(json.dumps(hosts_dict))
       with open ('http_hosts.yml', 'w') as fyaml:
-        fyaml.write(yaml.dump(hosts_dict, indent=3))
+        yaml.dump(hosts_dict, fyaml)
 ```
 
 ### Вывод скрипта при запуске при тестировании:
