@@ -303,8 +303,8 @@ server {
 	#
 	listen 443 ssl;
 	listen [::]:443 ssl;
-	ssl_certificate     site.company.com.crt.pem;
-  ssl_certificate_key site.company.com.crt.key;
+    ssl_certificate     site.company.com.crt.pem;
+    ssl_certificate_key site.company.com.crt.key;
 	server_name site.company.com;
 
 	root /var/www/html;
@@ -404,7 +404,7 @@ root@vagrant:~# ls -la /etc/nginx/site.company.com.crt.*
 
 Даты файлов обновились.
 
-Проверим сертификат в браузуре хостовой машины:
+Проверим сертификат в браузере хостовой машины:
 
 ![alt text](images/certRenew.png "Обновление сертификата")
 
