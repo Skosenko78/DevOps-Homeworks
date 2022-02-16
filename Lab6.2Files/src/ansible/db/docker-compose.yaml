@@ -1,0 +1,19 @@
+version: '2.1'
+
+volumes:
+    postgres_data: {}
+    postgres_backup: {}
+
+services:
+
+  postgres12:
+    image: postgres:12-alpine3.15
+    container_name: postgres12
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_backup:/var/lib/postgresql/backup
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=mysecretpassword
+    ports:
+      - "5432:5432"
