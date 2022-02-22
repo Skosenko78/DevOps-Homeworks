@@ -1,0 +1,17 @@
+version: '2.1'
+
+volumes:
+    mysql_data: {}
+
+services:
+
+  mysql:
+    image: mysql:8.0.28
+    container_name: mysql
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysecretpassword
+    ports:
+      - "3306:3306"
