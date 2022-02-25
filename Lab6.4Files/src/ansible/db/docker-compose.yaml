@@ -1,0 +1,17 @@
+version: '3.1'
+
+volumes:
+    postgres_data: {}
+
+services:
+
+  postgres:
+    image: postgres:13.6
+    container_name: postgres
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=mysecretpassword
+    ports:
+      - 5432:5432
