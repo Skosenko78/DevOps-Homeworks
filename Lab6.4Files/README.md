@@ -71,7 +71,8 @@ test_database=# BEGIN;
 BEGIN
 test_database=*# CREATE TABLE orders_1 ( CHECK (price>499)) INHERITS (orders);
 CREATE TABLE
-test_database=*# CREATE TABLE orders_2 ( CHECK (price<=499)) INHERITS (orders);CREATE TABLE
+test_database=*# CREATE TABLE orders_2 ( CHECK (price<=499)) INHERITS (orders);
+CREATE TABLE
 test_database=*# CREATE RULE orders_insert_to_1 AS ON INSERT TO orders WHERE (price>499) DO INSTEAD INSERT INTO orders_1 VALUES (NEW.*);
 CREATE RULE
 test_database=*# CREATE RULE orders_insert_to_2 AS ON INSERT TO orders WHERE (price<=499) DO INSTEAD INSERT INTO orders_2 VALUES (NEW.*);
@@ -138,7 +139,8 @@ test_database=#
 [vagrant@postgres db]$ docker exec -it postgres pg_dump -U postgres test_database > ./test_db_bak.sql
 ```
 
-Добавить уникальность значения столбца title для таблиц test_database можно :
+Чтобы сделать значения столбца title уникальным, нужно добавить параметр UNIQUE в SQL команду создания таблиц orders, orders_1, orders_2 в бэкап-файле:
+
 
 ![alt text](image/unique.png "Unique TITLE")
 
