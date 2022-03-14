@@ -1,0 +1,31 @@
+---
+
+  - hosts: elastichost
+    become: yes
+    become_user: root
+    remote_user: vagrant
+
+    tasks:
+      - name: Create directory for ssh-keys
+        file: state=directory mode=0700 dest=/root/.ssh/
+
+      - name: Installing tools
+        yum: name={{ item }} state=present update_cache=yes
+        with_items:
+          - git
+          - curl
+
+      - name: Installing docker
+        shell: curl -fsSL get.docker.com -o get-docker.sh && chmod +x get-docker.sh && ./get-docker.sh
+
+      - name: Add the current user to docker group
+        user: name=vagrant append=yes groups=docker
+
+      - name: Copy Docker manifest file
+        copy: src={{ item }} dest=/home/vagrant/
+        with_items:
+          - Dockerfile
+          - elasticsearch.yml
+
+      - name: Enable docker daemon
+        systemd: name=docker state=started enabled=yes
