@@ -238,4 +238,4 @@ Note: You didn't use the -out option to save this plan, so Terraform can't guara
 
 2. Ссылка на репозиторий с исходной конфигурацией терраформа.
 
-- 
+- https://github.com/Skosenko78/DevOps-Homeworks/tree/main/Lab7.2Files/cloud-terraform
