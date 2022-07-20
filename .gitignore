@@ -1,6 +1,7 @@
 .vagrant
 .idea
 key.json
+backend.conf
 
 # Local .terraform directories
 
