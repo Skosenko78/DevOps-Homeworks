@@ -2,6 +2,7 @@
 .idea
 key.json
 backend.conf
+.terraform.lock.hcl
 
 # Local .terraform directories
 
