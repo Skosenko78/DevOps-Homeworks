@@ -46,9 +46,10 @@ resource "yandex_storage_bucket" "tf-state" {
 ```
 
 Статический ключ укажем в переменных окружения:
-
+```
 export YC_STORAGE_ACCESS_KEY=<key_id>
 export YC_STORAGE_SECRET_KEY=<secret>
+```
 
 Создадим S3 бакет:
 
