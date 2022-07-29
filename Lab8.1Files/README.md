@@ -212,7 +212,7 @@ ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    s
 9. Посмотрите при помощи ansible-doc список плагинов для подключения. Выберите подходящий для работы на control node
 
 ```
-ansible-doc -t "connection" -l
+ansible-doc -t connection -l
 [WARNING]: Collection splunk.es does not support Ansible version 2.12.7
 [WARNING]: Collection ibm.qradar does not support Ansible version 2.12.7
 [DEPRECATION WARNING]: ansible.netcommon.napalm has been deprecated. See the plugin documentation for more details. This feature will be removed from
@@ -308,4 +308,6 @@ localhost                  : ok=3    changed=0    unreachable=0    failed=0    s
 ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 ```
 
-12. README заполнен.
+12. README заполнен:
+
+https://github.com/Skosenko78/DevOps-Homeworks/tree/main/Lab8.1Files/playbook
