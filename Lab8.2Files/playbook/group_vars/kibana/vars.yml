@@ -1,0 +1,4 @@
+---
+kibana_version: "7.10.1"
+kibana_home: "/opt/kibana/{{ kibana_version }}"
+kibana_elastichost: "10.0.0.41:9200"

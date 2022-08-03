@@ -1,0 +1,16 @@
+---
+elasticsearch:
+  hosts:
+    elastichost1:
+      ansible_connection: ssh
+      ansible_host: 10.0.0.41
+      ansible_ssh_private_key_file: ".vagrant/machines/elastichost1/virtualbox/private_key"
+      ansible_user: vagrant
+
+kibana:
+  hosts:
+    kibanahost1:
+      ansible_connection: ssh
+      ansible_host: 10.0.0.42
+      ansible_ssh_private_key_file: ".vagrant/machines/kibanahost1/virtualbox/private_key"
+      ansible_user: vagrant
