@@ -1,0 +1,10 @@
+---
+elasticsearch:
+  hosts:
+    centos7elastic:
+      ansible_connection: docker
+
+kibana:
+  hosts:
+    centos7kibana:
+      ansible_connection: docker

@@ -1,0 +1,3 @@
+---
+# vars file for kibana
+kibana_elastichost: "10.0.0.41:9200"
