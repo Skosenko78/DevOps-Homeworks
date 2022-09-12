@@ -1,0 +1,55 @@
+---
+- name: Install packages
+  apt:
+     name: 
+        - nginx
+        - letsencrypt
+        - python3-certbot-nginx
+     state: latest
+     update_cache: yes
+
+- name: Disable default site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Create letsencrypt directory
+  file:
+    path: /var/www/letsencrypt
+    state: directory
+
+- name: Generate new certificate
+  shell: >
+    certbot certonly -n --nginx --test-cert --email '{{ letsencrypt_email }}'
+    --agree-tos --no-eff-email -d '{{ domain_name }}, www.{{ domain_name }},
+    gitlab.{{ domain_name }},grafana.{{ domain_name }},prometheus.{{ domain_name }},
+    alertmanager.{{ domain_name }}'
+  args:
+    creates: /etc/letsencrypt/live/{{ domain_name }}
+
+- name: Install nginx available sites
+  template:
+    src: templates/nginx-{{ item }}.j2
+    dest: /etc/nginx/sites-available/{{ item }}
+  with_items: 
+     - www
+     - gitlab
+     - grafana
+     - prometheus
+     - alertmanager
+     - redirect
+  notify: Restart nginx
+
+- name: Enable Nginx sites
+  file:
+     src: /etc/nginx/sites-available/{{ item }}
+     dest: /etc/nginx/sites-enabled/{{ item }}
+     state: link
+  with_items: 
+     - www
+     - gitlab
+     - grafana
+     - prometheus
+     - alertmanager
+     - redirect
+  notify: Restart nginx
