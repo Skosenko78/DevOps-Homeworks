@@ -13,8 +13,10 @@ all:
          ansible_host: ${yandex_compute_instance.app.network_interface.0.ip_address}
       db01:
          ansible_host: ${yandex_compute_instance.db01.network_interface.0.ip_address}
+         mysql_replication_role: master
       db02:
          ansible_host: ${yandex_compute_instance.db02.network_interface.0.ip_address}
+         mysql_replication_role: slave
       gitlab:
          ansible_host: ${yandex_compute_instance.gitlab.network_interface.0.ip_address}
       runner:

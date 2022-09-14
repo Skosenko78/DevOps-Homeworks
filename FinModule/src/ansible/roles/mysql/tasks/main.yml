@@ -1,0 +1,90 @@
+---
+- name: Install Mysql packages
+  apt:
+    name: 
+      - mysql-server
+      - python3-mysqldb
+    state: latest
+    update_cache: yes
+
+- name: Start and enable mysql service
+  systemd:
+    name: mysql
+    state: started
+    enabled: yes
+
+- name: Create {{ db_name }} database
+  mysql_db:
+    name: "{{ db_name }}"
+    state: present
+
+- name: Create mysql user
+  mysql_user:
+    name: "{{ db_user }}"
+    password: "{{ db_pass }}"
+    priv: "{{ db_name }}.*:ALL"
+    host: '%'
+    state: present
+
+- name: Create replication user on master
+  mysql_user:
+    name: "{{ mysql_replication_user }}"
+    password: "{{ mysql_replication_user_password }}"
+    priv: "*.*:REPLICATION SLAVE,REPLICATION CLIENT"
+    host: "%"
+    state: present
+  when:
+    - mysql_replication_role == 'master'
+    - mysql_replication_user is defined
+
+- name: Enable remote login to mysql
+  lineinfile:
+    path: /etc/mysql/mysql.conf.d/mysqld.cnf
+    regexp: '^bind-address'
+    line: 'bind-address = 0.0.0.0'
+
+- name: Create master.cnf config file
+  template:
+    src=templates/master.cnf
+    dest=/etc/mysql/mysql.conf.d/master.cnf
+  when:
+    - mysql_replication_role == 'master'
+
+- name: Create slave.cnf config file
+  template:
+    src=templates/slave.cnf
+    dest=/etc/mysql/mysql.conf.d/slave.cnf
+  when:
+    - mysql_replication_role == 'slave'
+
+- name: Restart mysql
+  systemd:
+    name: mysql
+    state: restarted
+
+- name: Check slave replication status
+  mysql_replication:
+    mode: getreplica
+  register: slave
+  when:
+    - mysql_replication_role == 'slave'
+
+- name: Configure replication on the slave
+  mysql_replication:
+    mode: changeprimary
+    primary_host: "{{ mysql_replication_master }}"
+    primary_user: "{{ mysql_replication_user }}"
+    primary_password: "{{ mysql_replication_user_password }}"
+    primary_auto_position: yes
+  when:
+    - mysql_replication_role == 'slave'
+    - mysql_replication_user is defined
+    - (mysql_replication_master | length) > 0
+    - slave.Is_Replica == false
+
+- name: Start replica
+  mysql_replication:
+    mode: startreplica
+  when:
+    - mysql_replication_role == 'slave'
+    - slave.Is_Replica == false

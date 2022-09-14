@@ -4,9 +4,9 @@
   roles:
     - nginx
 
-#- hosts: mysql
-#  become: yes
-#  roles:
-#  - mysql
+- hosts: mysqldb
+  become: yes
+  roles:
+    - mysql
            
 ...
