@@ -13,16 +13,16 @@
     state: started
     enabled: yes
 
-- name: Create {{ db_name }} database
+- name: Create {{ wp_db_name }} database
   mysql_db:
-    name: "{{ db_name }}"
+    name: "{{ wp_db_name }}"
     state: present
 
 - name: Create mysql user
   mysql_user:
-    name: "{{ db_user }}"
-    password: "{{ db_pass }}"
-    priv: "{{ db_name }}.*:ALL"
+    name: "{{ wp_db_user }}"
+    password: "{{ wp_db_pass }}"
+    priv: "{{ wp_db_name }}.*:ALL"
     host: '%'
     state: present
 

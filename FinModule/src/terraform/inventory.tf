@@ -42,6 +42,9 @@ all:
             db02:
    vars:
       domain_name: ${var.domain_name}
+      wp_db_name: ${var.wp_db_name}
+      wp_db_user: ${var.wp_db_user}
+      wp_db_pass: ${var.wp_db_pass}
       # ip_nginx_host: ${yandex_compute_instance.nginx.network_interface.0.ip_address}
       # ip_app_host: ${yandex_compute_instance.app.network_interface.0.ip_address}
       # ip_db01_host: ${yandex_compute_instance.db01.network_interface.0.ip_address}

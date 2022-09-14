@@ -1,7 +1,4 @@
 ---
-db_user: wordpress
-db_pass: wordpress
-db_name: wordpress
 mysql_replication_master: db01.{{ domain_name }}
 mysql_replication_user: replication_admin
 mysql_replication_user_password: replication_pwd

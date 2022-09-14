@@ -10,6 +10,18 @@ variable "domain_name" {
   default = "skosenko78.fun"
 }
 
+variable "wp_db_name" {
+  default = "wordpress"
+}
+
+variable "wp_db_user" {
+  default = "wordpress"
+}
+
+variable "wp_db_pass" {
+  default = "wordpress"
+}
+
 variable "ubuntu_nat_instance" {
   default = "fd84mnpg35f7s7b0f5lg"  
 }
