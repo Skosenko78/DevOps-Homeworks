@@ -1,12 +1,12 @@
 ---
 - name: Install packages
   apt:
-     name: 
-        - nginx
-        - letsencrypt
-        - python3-certbot-nginx
-     state: latest
-     update_cache: yes
+    name: 
+      - nginx
+      - letsencrypt
+      - python3-certbot-nginx
+    state: latest
+    update_cache: yes
 
 - name: Disable default site
   file:
@@ -32,24 +32,24 @@
     src: templates/nginx-{{ item }}.j2
     dest: /etc/nginx/sites-available/{{ item }}
   with_items: 
-     - www
-     - gitlab
-     - grafana
-     - prometheus
-     - alertmanager
-     - redirect
+    - www
+    - gitlab
+    - grafana
+    - prometheus
+    - alertmanager
+    - redirect
   notify: Restart nginx
 
 - name: Enable Nginx sites
   file:
-     src: /etc/nginx/sites-available/{{ item }}
-     dest: /etc/nginx/sites-enabled/{{ item }}
-     state: link
+    src: /etc/nginx/sites-available/{{ item }}
+    dest: /etc/nginx/sites-enabled/{{ item }}
+    state: link
   with_items: 
-     - www
-     - gitlab
-     - grafana
-     - prometheus
-     - alertmanager
-     - redirect
+    - www
+    - gitlab
+    - grafana
+    - prometheus
+    - alertmanager
+    - redirect
   notify: Restart nginx

@@ -10,15 +10,15 @@ variable "domain_name" {
   default = "skosenko78.fun"
 }
 
-variable "wp_db_name" {
+variable "wordpress_db_name" {
   default = "wordpress"
 }
 
-variable "wp_db_user" {
+variable "wordpress_db_user" {
   default = "wordpress"
 }
 
-variable "wp_db_pass" {
+variable "wordpress_db_pass" {
   default = "wordpress"
 }
 

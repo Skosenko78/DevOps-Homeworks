@@ -1,0 +1,4 @@
+---
+php_modules: [ 'php-curl', 'php-gd', 'php-mbstring', 'php-soap', 'php-xml', 'php-xmlrpc', 'php-zip' ]
+mysql_server: "db01.{{ domain_name }}"
+
