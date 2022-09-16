@@ -1,5 +1,5 @@
 ---
-- name: Install packages
+- name: install packages
   apt:
     name: 
       - nginx
@@ -8,17 +8,17 @@
     state: latest
     update_cache: yes
 
-- name: Disable default site
+- name: disable default site
   file:
     path: /etc/nginx/sites-enabled/default
     state: absent
 
-- name: Create letsencrypt directory
+- name: create letsencrypt directory
   file:
     path: /var/www/letsencrypt
     state: directory
 
-- name: Generate new certificate
+- name: generate new certificate
   shell: >
     certbot certonly -n --nginx --test-cert --email '{{ letsencrypt_email }}'
     --agree-tos --no-eff-email -d '{{ domain_name }}, www.{{ domain_name }},
@@ -27,7 +27,7 @@
   args:
     creates: /etc/letsencrypt/live/{{ domain_name }}
 
-- name: Install nginx available sites
+- name: install nginx available sites
   template:
     src: templates/nginx-{{ item }}.j2
     dest: /etc/nginx/sites-available/{{ item }}
@@ -40,7 +40,7 @@
     - redirect
   notify: Restart nginx
 
-- name: Enable Nginx sites
+- name: enable Nginx sites
   file:
     src: /etc/nginx/sites-available/{{ item }}
     dest: /etc/nginx/sites-enabled/{{ item }}

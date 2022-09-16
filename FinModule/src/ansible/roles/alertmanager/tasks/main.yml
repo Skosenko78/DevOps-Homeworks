@@ -1,0 +1,59 @@
+---
+- name: create User alertmanager
+  user:
+    name: alertmanager
+    create_home: no
+    shell: /usr/sbin/nologin
+    system: yes
+
+- name: download and extract Alertmanager ver.{{ alertmanager_version }}
+  unarchive:
+    src: https://github.com/prometheus/alertmanager/releases/download/v{{ alertmanager_version }}/alertmanager-{{ alertmanager_version }}.linux-amd64.tar.gz
+    dest: /tmp
+    creates: /tmp/alertmanager-{{ alertmanager_version }}.linux-amd64
+    remote_src: yes
+
+- name: create working directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: alertmanager
+    group: alertmanager
+  with_items:
+    - '/etc/alertmanager'
+    - '/var/lib/prometheus/alertmanager'
+
+- name: copy files from temp folder
+  copy:
+    src: /tmp/alertmanager-{{ alertmanager_version }}.linux-amd64/{{ item.name }}
+    dest: "{{ item.dest }}"
+    remote_src: yes
+    mode: preserve
+    owner: alertmanager
+    group: alertmanager
+  loop:
+    - name: 'alertmanager'
+      dest: '/usr/local/bin/'
+    - name: 'amtool'
+      dest: '/usr/local/bin/'
+    - name: 'alertmanager.yml'
+      dest: '/etc/alertmanager/'
+
+- name: create alerts configuration files for Prometheus
+  copy:
+    src: files/alert_rules.yml
+    dest: /etc/prometheus/
+  tags: copy_config
+
+- name: copy systemd service file
+  copy:
+    src: files/alertmanager.service
+    dest: /etc/systemd/system/
+  notify:
+    - Systemd reload
+
+- name: alertmanager service start and enable
+  systemd:
+    name: alertmanager
+    state: started
+    enabled: yes

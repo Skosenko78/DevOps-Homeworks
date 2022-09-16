@@ -1,0 +1,29 @@
+groups:
+  - name: PrometheusTargets
+    rules:
+      - alert: PrometheusTargetMissing
+        expr: up == 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: Prometheus target missing (instance $labels.instance )
+          description: "A Prometheus target has disappeared. An exporter might be crashed.\n  VALUE =  $value \n  LABELS =  $labels"
+
+      - alert: PrometheusTargetHighLoad_5m
+        expr: node_load1 > 8
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus target instance {{ $labels.instance }} under high load"
+          description: "A Prometheus target {{ $labels.instance }} job {{ $labels.job }} is under high load for last 5 minutes."
+
+      - alert: PrometheusTargetHighLoad_1m
+        expr: node_load1 > 8
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus target instance {{ $labels.instance }} under load"
+          description: "A Prometheus target {{ $labels.instance }} job {{ $labels.job }} is under load for last 1 minutes."

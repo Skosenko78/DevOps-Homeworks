@@ -1,12 +1,47 @@
 ---
 - hosts: nginx
   become: yes
+  tasks:
+  - name: update file /etc/hosts
+    lineinfile:
+      path: /etc/hosts
+      line: "{{ nginx_host_int_ip }} nginx nginx.{{ domain_name }}"
   roles:
     - nginx
+    - node_exporter
 
 - hosts: mysqldb
   become: yes
+  tasks:
+  - name: update file /etc/hosts
+    lineinfile:
+      path: /etc/hosts
+      line: "{{ nginx_host_int_ip }} nginx nginx.{{ domain_name }}"
   roles:
     - mysql
-           
+    - node_exporter
+
+- hosts: app
+  become: yes
+  tasks:
+  - name: update file /etc/hosts
+    lineinfile:
+      path: /etc/hosts
+      line: "{{ nginx_host_int_ip }} nginx nginx.{{ domain_name }}"
+  roles:
+    - wordpress
+    - node_exporter
+
+- hosts: monitoring
+  become: yes
+  tasks:
+  - name: update file /etc/hosts
+    lineinfile:
+      path: /etc/hosts
+      line: "{{ nginx_host_int_ip }} nginx nginx.{{ domain_name }}"
+  roles:
+    - prometheus
+    - grafana
+    - alertmanager
+    - node_exporter          
 ...

@@ -1,5 +1,5 @@
 ---
-- name: Install Mysql packages
+- name: install Mysql packages
   apt:
     name: 
       - mysql-server
@@ -7,18 +7,18 @@
     state: latest
     update_cache: yes
 
-- name: Start and enable mysql service
+- name: start and enable mysql service
   systemd:
     name: mysql
     state: started
     enabled: yes
 
-- name: Create {{ wordpress_db_name }} database
+- name: create {{ wordpress_db_name }} database
   mysql_db:
     name: "{{ wordpress_db_name }}"
     state: present
 
-- name: Create mysql user
+- name: create mysql user
   mysql_user:
     name: "{{ wordpress_db_user }}"
     password: "{{ wordpress_db_pass }}"
@@ -26,7 +26,7 @@
     host: '%'
     state: present
 
-- name: Create replication user on master
+- name: create replication user on master
   mysql_user:
     name: "{{ mysql_replication_user }}"
     password: "{{ mysql_replication_user_password }}"
@@ -37,39 +37,39 @@
     - mysql_replication_role == 'master'
     - mysql_replication_user is defined
 
-- name: Enable remote login to mysql
+- name: enable remote login to mysql
   lineinfile:
     path: /etc/mysql/mysql.conf.d/mysqld.cnf
     regexp: '^bind-address'
     line: 'bind-address = 0.0.0.0'
 
-- name: Create master.cnf config file
+- name: create master.cnf config file
   template:
     src=templates/master.cnf
     dest=/etc/mysql/mysql.conf.d/master.cnf
   when:
     - mysql_replication_role == 'master'
 
-- name: Create slave.cnf config file
+- name: create slave.cnf config file
   template:
     src=templates/slave.cnf
     dest=/etc/mysql/mysql.conf.d/slave.cnf
   when:
     - mysql_replication_role == 'slave'
 
-- name: Restart mysql
+- name: restart mysql
   systemd:
     name: mysql
     state: restarted
 
-- name: Check slave replication status
+- name: check slave replication status
   mysql_replication:
     mode: getreplica
   register: slave
   when:
     - mysql_replication_role == 'slave'
 
-- name: Configure replication on the slave
+- name: configure replication on the slave
   mysql_replication:
     mode: changeprimary
     primary_host: "{{ mysql_replication_master }}"
@@ -82,7 +82,7 @@
     - (mysql_replication_master | length) > 0
     - slave.Is_Replica == false
 
-- name: Start replica
+- name: start replica
   mysql_replication:
     mode: startreplica
   when:
