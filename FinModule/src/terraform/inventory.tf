@@ -46,12 +46,6 @@ all:
       wordpress_db_user: ${var.wordpress_db_user}
       wordpress_db_pass: ${var.wordpress_db_pass}
       nginx_host_int_ip: ${yandex_compute_instance.nginx.network_interface.0.ip_address}
-      # ip_app_host: ${yandex_compute_instance.app.network_interface.0.ip_address}
-      # ip_db01_host: ${yandex_compute_instance.db01.network_interface.0.ip_address}
-      # ip_db02_host: ${yandex_compute_instance.db02.network_interface.0.ip_address}
-      # ip_gitlab_host: ${yandex_compute_instance.gitlab.network_interface.0.ip_address}
-      # ip_runner_host: ${yandex_compute_instance.runner.network_interface.0.ip_address}
-      # ip_monitoring_host: ${yandex_compute_instance.monitoring.network_interface.0.ip_address}
 ...
 DOC
 filename = "../ansible/inventory"

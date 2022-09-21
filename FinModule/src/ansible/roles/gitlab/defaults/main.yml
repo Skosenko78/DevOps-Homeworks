@@ -1,0 +1,5 @@
+gitlab_edition: "gitlab-ce"
+gitlab_installation_script_url: "https://packages.gitlab.com/install/repositories/gitlab/{{ gitlab_edition }}/script.deb.sh"
+
+gitlab_external_url: "http://gitlab.{{ domain_name }}"
+gitlab_root_password: "abc123456789"

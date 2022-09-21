@@ -1,0 +1,4 @@
+- name: restart gitlab
+  command: gitlab-ctl reconfigure
+  register: __result
+  failed_when: __result.rc != 0 | bool

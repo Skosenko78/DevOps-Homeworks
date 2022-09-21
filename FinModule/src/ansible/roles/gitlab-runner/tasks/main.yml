@@ -1,0 +1,59 @@
+---
+- name: check if GitLab runner is already installed
+  stat: path=/usr/bin/gitlab-runner
+  register: __gitlab_runner_file
+
+- name: download GitLab runner installation script
+  get_url:
+    url: "{{ gitlabrunner_installation_script_url }}"
+    dest: /tmp/gitlab_runner_install_repository.sh
+    mode: u+x
+  when: not __gitlab_runner_file.stat.exists
+
+- name: install GitLab runner repository
+  shell: "/tmp/gitlab_runner_install_repository.sh"
+  when: not __gitlab_runner_file.stat.exists
+
+- name: install GitLab runner
+  package:
+    name: "gitlab-runner"
+    state: present
+  when: not __gitlab_runner_file.stat.exists
+
+- name: obtain registration token
+  command: 'gitlab-rails runner -e production "puts Gitlab::CurrentSettings.current_application_settings.runners_registration_token"'
+  delegate_to: "{{ gitlab_host }}"
+  when: gitlab_host is defined
+  register: runners_registration_token
+  changed_when: false
+
+- name: set gitlab_runner_token
+  set_fact:
+    gitlab_runner_token: "{{ runners_registration_token.stdout }}"
+  when: gitlab_host is defined and runners_registration_token.rc == 0
+
+- name: register runner
+  command: |
+    gitlab-runner register \
+    --non-interactive \
+    --url "{{ gitlab_external_url }}" \
+    --registration-token "{{ gitlab_runner_token|quote }}" \
+    --description "WordpressChecker" \
+    --executor "shell"
+  when: gitlab_runner_token is defined and not __gitlab_runner_file.stat.exists
+
+- name: create directory for gitlab-runner ssh keys
+  file:
+    name: /home/gitlab-runner/.ssh/
+    state: directory
+    group: gitlab-runner
+    owner: gitlab-runner
+    mode: '700'
+
+- name: copy id_rsa private key file
+  copy:
+    src: ~/.ssh/id_rsa
+    dest: /home/gitlab-runner/.ssh/
+    group: gitlab-runner
+    owner: gitlab-runner
+    mode: '600'

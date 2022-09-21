@@ -1,0 +1,43 @@
+---
+- name: check if GitLab is already installed
+  stat: path=/usr/bin/gitlab-ctl
+  register: __gitlab_file
+
+- name: install necessary packages
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  loop:
+    - curl
+    - tzdata
+    - postfix
+    - ruby-ffi-libarchive
+
+- name: download GitLab installation script
+  get_url:
+    url: "{{ gitlab_installation_script_url }}"
+    dest: /tmp/gitlab_install_repository.sh
+    mode: u+x
+  when: not __gitlab_file.stat.exists
+
+- name: install GitLab repository
+  shell: "/tmp/gitlab_install_repository.sh"
+  when: not __gitlab_file.stat.exists
+
+- name: install GitLab
+  package:
+    name: "{{ gitlab_edition }}"
+    state: present
+  async: 500
+  poll: 5
+  when: not __gitlab_file.stat.exists
+
+- name: create GitLab configuration file
+  template:
+    src: "templates/gitlab.rb.j2"
+    dest: "/etc/gitlab/gitlab.rb"
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart gitlab
