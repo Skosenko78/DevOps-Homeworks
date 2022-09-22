@@ -36,3 +36,15 @@ scrape_configs:
         - db02.{{ domain_name }}:9100
         - gitlab.{{ domain_name }}:9100
         - runner.{{ domain_name }}:9100
+        
+  - job_name: "MySql Master"
+    static_configs:
+      - targets: ['db01.{{ domain_name }}:9104']
+        labels:
+          alias: master
+
+  - job_name: "MySql Slave"
+    static_configs:
+      - targets: ['db02.{{ domain_name }}:9104']
+        labels:
+          alias: slave

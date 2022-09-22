@@ -30,6 +30,7 @@
   loop:
     - "dashboard.yml"
     - "node-exporter-full.json"
+    - "mysql-overview.json"
 
 - name: start and enable grafana service
   systemd:

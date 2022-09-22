@@ -1,0 +1,6 @@
+---
+mysqld_exporter_version: "0.14.0"
+mysqld_exporter_bin: /usr/local/bin/mysqld_exporter
+mysqld_exporter_user: mysqlexporter
+mysqld_exporter_password: StrongPassword
+mysqld_exporter_conf_dir: /etc/mysqld_exporter

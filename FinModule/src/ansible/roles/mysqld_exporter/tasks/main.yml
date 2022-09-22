@@ -1,0 +1,71 @@
+---
+- name: create mysqld_exporter user
+  user:
+    name: "{{ mysqld_exporter_user }}"
+    shell: /usr/sbin/nologin
+    system: yes
+    create_home: no
+
+- name: create mysqld_exporter config dir
+  file:
+    path: "{{ mysqld_exporter_conf_dir }}"
+    state: directory
+    owner: "{{ mysqld_exporter_user }}"
+    group: "{{ mysqld_exporter_user }}"
+
+- name: download and unzip mysqld_exporter if not exist
+  unarchive:
+    src: "https://github.com/prometheus/mysqld_exporter/releases/download/v{{ mysqld_exporter_version }}/mysqld_exporter-{{ mysqld_exporter_version }}.linux-amd64.tar.gz"
+    dest: /tmp/
+    remote_src: yes
+    creates: "/tmp/mysqld_exporter-{{ mysqld_exporter_version }}.linux-amd64"
+    validate_certs: no
+
+- name: move the binary to the destination
+  copy:
+    src: "/tmp/mysqld_exporter-{{ mysqld_exporter_version }}.linux-amd64/mysqld_exporter"
+    dest: "{{ mysqld_exporter_bin }}"
+    owner: "{{ mysqld_exporter_user }}"
+    group: "{{ mysqld_exporter_user }}"
+    mode: preserve
+    remote_src: yes
+
+- name: create mysqld_exporter mysql connection config file
+  template:
+    src: mysqld_exporter.cnf.j2
+    dest: "{{ mysqld_exporter_conf_dir }}/.mysqld_exporter.cnf"
+    owner: "{{ mysqld_exporter_user }}"
+    group: "{{ mysqld_exporter_user }}"
+
+- name: create mysqld_exporter user in mysql
+  mysql_user:
+    name: "{{ mysqld_exporter_user }}"
+    password: "{{ mysqld_exporter_password }}"
+    priv: "*.*:PROCESS,REPLICATION CLIENT,SELECT"
+    host: localhost
+    resource_limits:
+      MAX_USER_CONNECTIONS: 2
+    state: present
+  when: mysql_replication_role == 'master'
+
+- name: copy mysqld_exporter service file
+  template:
+    src: mysqld_exporter.service.j2
+    dest: /etc/systemd/system/mysqld_exporter.service
+    owner: root
+    group: root
+    mode: 0755
+  notify: Systemd reload
+
+- name: mysqld_exporter service start
+  systemd:
+    name: mysqld_exporter
+    state: started
+    enabled: yes
+
+- name: verify mysqld_exporter is responding to requests.
+  uri:
+    url: http://localhost:9104/
+    return_content: true
+  register: metrics_output
+  failed_when: "'Metrics' not in metrics_output.content"

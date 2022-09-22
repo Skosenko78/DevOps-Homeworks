@@ -18,6 +18,7 @@
   roles:
     - mysql
     - node_exporter
+    - mysqld_exporter
 
 - hosts: app
   become: yes

@@ -1,8 +1,66 @@
-# **7.3. Основы и принцип работы Терраформ**
+# **Дипломный практикум в YandexCloud**
 
-# *Задача 1. Создадим бэкэнд в S3*
+## 1. Регистрация доменного имени
 
-1. Создадим статический ключ доступа для сервисной учётной записи. Этот ключ понадобится для подключения S3 бакет.
+### 1.1. Доменное имя
+Зарегистрировано доменное имя `skosenko78.fun`
+
+![alt text](images/domain_name.png "Domain name")
+
+### 1.2. Управление зоной
+Управление зоной делегировано серверам yandexcloud.
+
+![alt text](images/dns_servers.png "Domain name")
+
+## 2. Создание инфраструктуры
+
+### 2.1.Создайте сервисный аккаунт, который будет в дальнейшем использоваться Terraform для работы с инфраструктурой
+
+Создание сервисного аккаунта:
+
+```
+yc iam service-account create --name terra-robot
+id: aje4h0j2i352da28q9k7
+folder_id: b1g8t7bb3jnhfrkoa6uk
+created_at: "2022-07-19T12:48:39.957327905Z"
+name: terra-robot
+```
+
+Сервисному аккаунту необходимо назначить роль, т.е. указать что этот аккаунт может делать в нашем облаке. Назначим этой сервисной учётноной записи роль 'Editor':
+
+```
+yc iam service-account get terra-robot
+id: aje4h0j2i352da28q9k7
+folder_id: b1g8t7bb3jnhfrkoa6uk
+created_at: "2022-07-19T12:48:39Z"
+name: terra-robot
+
+yc resource-manager folder add-access-binding netology --role editor --subject serviceAccount:aje4h0j2i352da28q9k7
+```
+
+Получим IAM-токен для авторизации сервисной учётной записи. Для этого создадим авторизованные ключи (пара открытый и закрытый):
+
+```
+yc iam key create --service-account-name terra-robot --output key.json
+id: ajeentnp5cscf0e9nli4
+service_account_id: aje4h0j2i352da28q9k7
+created_at: "2022-07-19T13:35:34.009305557Z"
+key_algorithm: RSA_2048
+```
+
+И получим token:
+
+```
+yc iam create-token 
+<token>
+
+```
+
+Укажем все эти данные в файле `src/terraform/key.json` для того, чтобы не указывать их постоянно при запуске инфраструктуры.
+
+### 2.2. Подготовьте backend S3 bucket для Terraform в созданном YC аккаунте.
+
+Создадим статический ключ доступа для сервисной учётной записи. Этот ключ понадобится для подключения S3 бакета.
 
 ```
 yc iam service-account list
@@ -21,29 +79,7 @@ access_key:
 secret: <value>
 ```
 
-Прежде чем сохранить состояние terraform в бэкэнд нужно создать S3 бакет. Создавать его будем тем же terraform. Для этого создадим ещё один конфигурационный файл в папке 's3-terraform':
-
-```
-terraform {
-  required_providers {
-    yandex = {
-      source = "yandex-cloud/yandex"
-    }
-  }
-  required_version = ">= 0.13"
-}
-
-provider "yandex" {
-  service_account_key_file = "key.json"
-  cloud_id  = "b1gl404splab9eas7u6l"
-  folder_id = "b1g8t7bb3jnhfrkoa6uk"
-  zone      = "ru-central1-a"
-}
-
-resource "yandex_storage_bucket" "tf-state" {
-  bucket = "terraform-running-state"
-}
-```
+Прежде чем сохранить состояние terraform в бэкэнд, нужно создать S3 бакет. Создавать его будем тем же terraform. Для этого создадим ещё один конфигурационный файл `main.tf` в папке `src/s3-terraform/`. В ту же папку скопируем файл `key.json`
 
 Статический ключ укажем в переменных окружения:
 ```
@@ -51,44 +87,11 @@ export YC_STORAGE_ACCESS_KEY=<key_id>
 export YC_STORAGE_SECRET_KEY=<secret>
 ```
 
+cloud_id, folder_id и имя bucket указываются в файле `variables.tf`.
+
 Создадим S3 бакет:
 
 ```
-terraform plan
-
-Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
-  + create
-
-Terraform will perform the following actions:
-
-  # yandex_storage_bucket.tf-state will be created
-  + resource "yandex_storage_bucket" "tf-state" {
-      + acl                   = "private"
-      + bucket                = "terraform-running-state"
-      + bucket_domain_name    = (known after apply)
-      + default_storage_class = (known after apply)
-      + folder_id             = (known after apply)
-      + force_destroy         = false
-      + id                    = (known after apply)
-      + website_domain        = (known after apply)
-      + website_endpoint      = (known after apply)
-
-      + anonymous_access_flags {
-          + list = (known after apply)
-          + read = (known after apply)
-        }
-
-      + versioning {
-          + enabled = (known after apply)
-        }
-    }
-
-Plan: 1 to add, 0 to change, 0 to destroy.
-
-─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-Note: You didn't use the -out option to save this plan, so Terraform can't guarantee to take exactly these actions if you run "terraform apply" now.
-
 terraform apply -auto-approve
 
 Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
@@ -134,7 +137,7 @@ Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 
 ![alt text](images/s3backet.png "S3 Backet")
 
-2. Теперь можно добавить бэкэнд в основную конфигурацию:
+Теперь можно добавить бэкэнд в основную конфигурацию (файл `src/terraform/provider.tf`):
 
 ```
 backend "s3" {
@@ -147,12 +150,9 @@ backend "s3" {
     skip_credentials_validation = true
   }
 ```
+### 2.3. Настройте workspaces
 
-
-# *Задача 2. Инициализируем проект и создаем воркспейсы.*
-
-
-1. Выполните terraform init:
+Инициализируем проект, выполнив terraform init:
 
 Статичный ключ бэкэнда укажем при инициализации terraform:
 
@@ -160,7 +160,7 @@ backend "s3" {
 terraform init -backend-config="access_key=<key_id>" -backend-config="secret_key=<secret>"
 ```
 
-2. Создайте два воркспейса stage и prod:
+Создадим два воркспейса stage и prod:
 
 ```
 terraform workspace new stage
@@ -180,6 +180,45 @@ so if you run "terraform plan" Terraform will not see any existing state
 for this configuration.
 ```
 
+### 2.4. Создайте VPC с подсетями в разных зонах доступности.
+
+Сеть с подсетями описаны в файле `src/terraform/network.tf`
+
+### 2.5. Убедитесь, что теперь вы можете выполнить команды terraform destroy и terraform apply без дополнительных ручных действий.
+
+Команды выполняются.
+
+## 3. Установка Nginx и LetsEncrypt
+
+Конфигурция сервера описана в файле `src/terraform/nginx.tf`. Имя домена, для которого производится настройка, задаётся переменной `domain_name` в файле `src/terraform/variables.tf`
+
+### 3.1. В вашей доменной зоне настроены все A-записи на внешний адрес этого сервера.
+
+В файле `src/terraform/dns.tf` описано создание нужных записей в DNS зоне.
+
+### 3.2. Настроены все upstream для выше указанных URL, куда они сейчас ведут на этом шаге не важно, позже вы их отредактируете и укажите верные значения.
+
+Настройка осуществляется ansible ролью `nginx`. Находится по пути `src/ansible/roles/nginx`
+
+### 3.3. В браузере можно открыть любой из этих URL и увидеть ответ сервера (502 Bad Gateway).
+
+![alt text](images/502_bad_gateway.png "502 Bad Gateway")
+
+Получение LetsEncrypt сертификатов также осуществляется этой ansible ролью.
+
+
+
+## 4. Установка кластера MySQL
+
+Конфигурция серверов описана в файлах `src/terraform/db01.tf` (master) и `src/terraform/db02.tf` (slave). Имя базы, имя пользователя для подключения и пароль задаются соответствующими переменными `wordpress_db_name`, `wordpress_db_user` и `wordpress_db_pass` в файле  `src/terraform/variables.tf`.
+
+Ansible роль `mysql` настраивает MySQL для работы в режиме репликации Master/Slave.Создаёт базу данных c именем, указанном в переменной `wordpress_db_name`. В кластере создаётся пользователь для подключения к базе днанных Wordpress. Роль находится в папке `src/ansible/roles/mysql`.
+
+## 5. Установка WordPress
+
+## 6. Установка Gitlab CE и Gitlab Runner
+
+## 7. Установка Prometheus, Alert Manager, Node Exporter и Grafana
 3. Добавьте зависимость типа инстанса от вокспейса:
 
 Добавим в файл main.tf конфигурацию:

@@ -18,8 +18,4 @@ locals {
     stage = "192.168.10.254"
     prod = "192.168.20.254"
   }
-
- # comp_source_image = "fd8fte6bebi857ortlja"
- # comp_nat_source_image = "fd84mnpg35f7s7b0f5lg"
-
 }
