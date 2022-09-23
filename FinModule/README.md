@@ -336,4 +336,4 @@ deploy-job:      # This job runs in the deploy stage.
 
 ![alt text](images/terraform_apply.png "Terraform Apply")
 
-![alt text](images/virtual_hosts.png "Virtual Hosts")
+![alt text](images/yc_virtual_hosts.png "Virtual Hosts")
