@@ -335,3 +335,5 @@ deploy-job:      # This job runs in the deploy stage.
 Создаются и запускаются виртуальные машины, выполняется playbook `src/ansible/site.yml` применительно к хостам из файла `src/ansible/inventory`, который создается terraform'ом. Создание и настройка итоговой инфраструктуры заняли примерно 30 минут:
 
 ![alt text](images/terraform_apply.png "Terraform Apply")
+
+![alt text](images/virtual_hosts.png "Virtual Hosts")
