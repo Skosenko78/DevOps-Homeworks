@@ -178,6 +178,11 @@ Created and switched to workspace "prod"!
 You're now on a new, empty workspace. Workspaces isolate their state,
 so if you run "terraform plan" Terraform will not see any existing state
 for this configuration.
+
+terraform workspace list
+  default
+  prod
+* stage
 ```
 
 ### 2.4. Создайте VPC с подсетями в разных зонах доступности.
@@ -207,766 +212,126 @@ for this configuration.
 Получение LetsEncrypt сертификатов также осуществляется этой ansible ролью.
 
 
-
 ## 4. Установка кластера MySQL
 
 Конфигурция серверов описана в файлах `src/terraform/db01.tf` (master) и `src/terraform/db02.tf` (slave). Имя базы, имя пользователя для подключения и пароль задаются соответствующими переменными `wordpress_db_name`, `wordpress_db_user` и `wordpress_db_pass` в файле  `src/terraform/variables.tf`.
 
-Ansible роль `mysql` настраивает MySQL для работы в режиме репликации Master/Slave.Создаёт базу данных c именем, указанном в переменной `wordpress_db_name`. В кластере создаётся пользователь для подключения к базе днанных Wordpress. Роль находится в папке `src/ansible/roles/mysql`.
+Ansible роль `mysql` настраивает MySQL для работы в режиме репликации Master/Slave.Создаёт базу данных c именем, указанном в переменной `wordpress_db_name`. В кластере создаётся пользователь для подключения к базе данных Wordpress. Роль находится в папке `src/ansible/roles/mysql`.
 
 ## 5. Установка WordPress
 
+Конфигурция сервера описана в файле `src/terraform/app.tf`. Для web сервера использовался Nginx и Php-fpm. Установка и настройка осуществляется ролью `wordpress`. Роль находится в папке `src/ansible/roles/wordpress`. После настройки можно увидеть стартовую страницу Wordpress:
+
+![alt text](images/wordpress_start.png "Wordpress Start")
+
+После первичной настройки:
+
+![alt text](images/wordpress_test.png "Wordpress Test Site")
+
 ## 6. Установка Gitlab CE и Gitlab Runner
 
+Конфигурция серверов описана в файлах `src/terraform/gitlab.tf` и `src/terraform/runner.tf`. Установка и настройка осуществляется ролями `gitlab` и `gitlab-runner`. Роли находятся в папках `src/ansible/roles/gitlab` и `src/ansible/roles/gitlab-runner`. Для подключения к Gitlab используется логин `root` и пароль `abc123456789`. Пароль задаётся в переменной роли `gitlab_root_password`.
+
+Интерфейс Gitlab доступен по https:
+
+![alt text](images/gitlab_start.png "Gitlab Start Page")
+
+Роль `gitlab-runner` регистрирует runner на gitlab сервере. Мы можем проверить это после выполнения роли:
+
+![alt text](images/gitlab_runner.png "Gitlab Start Page")
+
+Импортируем проект Wordpress по ссылке: https://github.com/wordpress/wordpress.git
+
+![alt text](images/gitlab_import_project.png "Gitlab Import Wordpress")
+
+Создадим pipeline такого содержания:
+
+```
+# This file is a template, and might need editing before it works on your project.
+# This is a sample GitLab CI/CD configuration file that should run without any modifications.
+# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
+# it uses echo commands to simulate the pipeline execution.
+#
+# A pipeline is composed of independent jobs that run scripts, grouped into stages.
+# Stages run in sequential order, but jobs within stages run in parallel.
+#
+# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
+#
+# You can copy and paste this template into a new `.gitlab-ci.yml` file.
+# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+#
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+
+stages:          # List of stages for jobs, and their order of execution
+  - deploy
+
+deploy-job:      # This job runs in the deploy stage.
+  stage: deploy
+  only:
+    - tags
+  script:
+    - echo "Deploying application..."
+    - ssh -o StrictHostKeyChecking=no ubuntu@app.skosenko78.fun sudo chown ubuntu:ubuntu /var/www/wordpress/ -R
+    - rsync -vz -e "ssh -o StrictHostKeyChecking=no" --exclude ".git*" $CI_PROJECT_DIR/* ubuntu@app.skosenko78.fun:/var/www/wordpress/
+    - ssh -o StrictHostKeyChecking=no ubuntu@app.skosenko78.fun sudo chown www-data:www-data /var/www/wordpress/ -R
+    - echo "Application successfully deployed."
+```
+
+![alt text](images/gitlab_pipeline.png "Gitlab Pipeline")
+
+Проверим работу pipeline на статичной странице Wordpress:
+
+![alt text](images/wordpress_readme.png "Wordpress Static Page")
+
+Изменим файл readme.html в нашем репозитории, сделаем commit и добавим tag:
+
+![alt text](images/wordpress_readme_change.png "Wordpress Static Page Change")
+
+![alt text](images/wordpress_readme_tag.png "Adding Tag")
+
+Видно, что после добавления tag, pipeline запустился и успешно отработал:
+
+![alt text](images/wordpress_readme_pipeline.png "Pipeline Status")
+
+![alt text](images/pipeline_job_status.png "Pipeline Job Status")
+
+После обновления страницы в браузере можно увидеть, что внесённые изменения были применены на сервер с Wordpress:
+
+![alt text](images/wordpress_readme_update.png "Wordpress Static Page Updated")
+
 ## 7. Установка Prometheus, Alert Manager, Node Exporter и Grafana
-3. Добавьте зависимость типа инстанса от вокспейса:
 
-Добавим в файл main.tf конфигурацию:
-```
-...
+Конфигурция сервера мониторинга описана в файле `src/terraform/monitoring.tf`. Установка и настройка ПО осуществляется ролями `prometheus`, `grafana`, `alertmanager`. Роли находятся в папках `src/ansible/roles/prometheus`, `src/ansible/roles/grafana`, `src/ansible/roles/alertmanager`. Кроме того, для серверов, которые требуется мониторить, написана роль `node_exporter`. Для серверов MySQL дополнительно применяется роль `mysqld_exporter`, для мониторинга параметров баз данных MySQL.
 
-locals {
-  comp_instance_type_map = {
-    stage = "standard-v1"
-    prod = "standard-v2"
-  }
-}
+Для входа в интерфейс Grafana используется логин и пароль по-умолчанию (admin/admin). Dashboard'ы подключаются при разворачивании приложения ролью `grafana`.
 
-resource "yandex_compute_instance" "nodes" {
-  name        = "${terraform.workspace}-node"
-  platform_id = local.comp_instance_type_map[terraform.workspace]
+Интерфейсы Prometheus, Alert Manager и Grafana доступны по https:
 
-  resources {
-    cores  = 2
-    memory = 4
-  }
+![alt text](images/prometheus.png "Prometheus Interface")
 
-  boot_disk {
-    initialize_params {
-      image_id = "${yandex_compute_image.test-image.id}"
-    }
-  }
+![alt text](images/grafana_linux.png "Grafana Node Exporter Dashboard")
 
-  network_interface {
-    subnet_id = "${yandex_vpc_subnet.subnet.id}"
-  }
-}
-...
-```
+![alt text](images/grafana_mysql.png "Grafana Mysql Dashboard")
 
-Проверим:
+![alt text](images/alertmanager.png "Alertmanager Interface")
 
-```
-terraform plan
-...
-# yandex_compute_instance.nodes will be created
-  + resource "yandex_compute_instance" "nodes" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "prod-node"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v2"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-...
-```
+Выключим машину app и проверим работу alertmanager:
 
-Переключимся в другой workspace:
+![alt text](images/app_off.png "Wordpress offline")
 
-```
-terraform workspace select stage
-Switched to workspace "stage".
-```
 
-Проверим:
+![alt text](images/alertmanager_alarm.png "Alertmanager Target Missing")
 
-```
-...
-# yandex_compute_instance.nodes will be created
-  + resource "yandex_compute_instance" "nodes" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "stage-node"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v1"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-...
-```
+После запуска виртуальной машины app сообщение исчезло.
 
-4. Добавим count. Для stage должен создаться один экземпляр, а для prod два.
 
-Изменим конфигурацию в файле main.tf:
+## 8. Запуск стенда
 
-```
-...
-locals {
-  comp_instance_type_map = {
-    stage = "standard-v1"
-    prod = "standard-v2"
-  }
+Полностью стенд запускается по `terraform apply -auto-approve`.
 
-  instance_count_map = {
-    stage = 1
-    prod = 2
-  }
-}
+Создаются и запускаются виртуальные машины, выполняется playbook `src/ansible/site.yml` применительно к хостам из файла `src/ansible/inventory`, который создается terraform'ом. Создание и настройка итоговой инфраструктуры заняли примерно 30 минут:
 
-resource "yandex_compute_instance" "nodes" {
-  name        = "${terraform.workspace}-node-${count.index}"
-  platform_id = local.comp_instance_type_map[terraform.workspace]
-  count = local.instance_count_map[terraform.workspace]
-
-  resources {
-    cores  = 2
-    memory = 4
-  }
-...
-```
-Проверим:
-
-```
-...
-# yandex_compute_instance.nodes[0] will be created
-  + resource "yandex_compute_instance" "nodes" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "stage-node-0"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v1"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-...
-```
-Переключимся в другой workspace:
-
-```
-terraform workspace select prod
-Switched to workspace "prod".
-```
-
-Проверим:
-
-```
-...
- # yandex_compute_instance.nodes[0] will be created
-  + resource "yandex_compute_instance" "nodes" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "prod-node-0"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v2"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-
-      + boot_disk {
-          + auto_delete = true
-          + device_name = (known after apply)
-          + disk_id     = (known after apply)
-          + mode        = (known after apply)
-
-          + initialize_params {
-              + block_size  = (known after apply)
-              + description = (known after apply)
-              + image_id    = (known after apply)
-              + name        = (known after apply)
-              + size        = (known after apply)
-              + snapshot_id = (known after apply)
-              + type        = "network-hdd"
-            }
-        }
-
-      + network_interface {
-          + index              = (known after apply)
-          + ip_address         = (known after apply)
-          + ipv4               = true
-          + ipv6               = (known after apply)
-          + ipv6_address       = (known after apply)
-          + mac_address        = (known after apply)
-          + nat                = (known after apply)
-          + nat_ip_address     = (known after apply)
-          + nat_ip_version     = (known after apply)
-          + security_group_ids = (known after apply)
-          + subnet_id          = (known after apply)
-        }
-
-      + placement_policy {
-          + host_affinity_rules = (known after apply)
-          + placement_group_id  = (known after apply)
-        }
-
-      + resources {
-          + core_fraction = 100
-          + cores         = 2
-          + memory        = 4
-        }
-
-      + scheduling_policy {
-          + preemptible = (known after apply)
-        }
-    }
-
-  # yandex_compute_instance.nodes[1] will be created
-  + resource "yandex_compute_instance" "nodes" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "prod-node-1"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v2"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-
-      + boot_disk {
-          + auto_delete = true
-          + device_name = (known after apply)
-          + disk_id     = (known after apply)
-          + mode        = (known after apply)
-
-          + initialize_params {
-              + block_size  = (known after apply)
-              + description = (known after apply)
-              + image_id    = (known after apply)
-              + name        = (known after apply)
-              + size        = (known after apply)
-              + snapshot_id = (known after apply)
-              + type        = "network-hdd"
-            }
-        }
-
-      + network_interface {
-          + index              = (known after apply)
-          + ip_address         = (known after apply)
-          + ipv4               = true
-          + ipv6               = (known after apply)
-          + ipv6_address       = (known after apply)
-          + mac_address        = (known after apply)
-          + nat                = (known after apply)
-          + nat_ip_address     = (known after apply)
-          + nat_ip_version     = (known after apply)
-          + security_group_ids = (known after apply)
-          + subnet_id          = (known after apply)
-        }
-
-      + placement_policy {
-          + host_affinity_rules = (known after apply)
-          + placement_group_id  = (known after apply)
-        }
-
-      + resources {
-          + core_fraction = 100
-          + cores         = 2
-          + memory        = 4
-        }
-
-      + scheduling_policy {
-          + preemptible = (known after apply)
-        }
-    }
-...
-```
-
-5. Создать еще один instance, но определить количество при помощи for_each, а не count
-
-Изменим конфигурацию в файле main.tf. Добавим:
-
-```
-...
-locals {
-  hosts = {
-    stage = toset(["nodes-1"])
-    prod = toset(["nodep-1", "nodep-2"])
-  }
-}
-...
-resource "yandex_compute_instance" "nodes_each" {
-  for_each = local.hosts[terraform.workspace]
-  name = each.key
-  platform_id = local.comp_instance_type_map[terraform.workspace]
-
-  resources {
-    cores  = 2
-    memory = 4
-  }
-
-  boot_disk {
-    initialize_params {
-      image_id = "${yandex_compute_image.test-image.id}"
-    }
-  }
-
-  network_interface {
-    subnet_id = "${yandex_vpc_subnet.subnet.id}"
-  }
-}
-...
-```
-
-Проверим:
-
-```
-# yandex_compute_instance.nodes-count[0] will be created
-  + resource "yandex_compute_instance" "nodes-count" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "stage-node-0"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v1"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-...
- # yandex_compute_instance.nodes_each["nodes-1"] will be created
-  + resource "yandex_compute_instance" "nodes_each" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "nodes-1"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v1"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-...
-```
-Переключимся в другой workspace:
-
-```
-terraform workspace select prod
-Switched to workspace "prod".
-```
-
-Проверим:
-
-```
-# yandex_compute_instance.nodes-count[0] will be created
-  + resource "yandex_compute_instance" "nodes-count" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "prod-node-0"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v2"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-...
-# yandex_compute_instance.nodes-count[1] will be created
-  + resource "yandex_compute_instance" "nodes-count" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "prod-node-1"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v2"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-...
-# yandex_compute_instance.nodes-each["nodep-1"] will be created
-  + resource "yandex_compute_instance" "nodes_each" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "nodep-1"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v2"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-...
-# yandex_compute_instance.nodes-each["nodep-2"] will be created
-  + resource "yandex_compute_instance" "nodes_each" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "nodep-2"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v2"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-...
-```
-
-6. Добавьте параметр жизненного цикла create_before_destroy = true
-
-```
-resource "yandex_compute_instance" "nodes_each" {
-
-  for_each = local.hosts[terraform.workspace]
-  name = each.key
-  platform_id = local.comp_instance_type_map[terraform.workspace]
-
-  resources {
-    cores  = 2
-    memory = 4
-  }
-
-  boot_disk {
-    initialize_params {
-      image_id = "${yandex_compute_image.test-image.id}"
-    }
-  }
-
-  network_interface {
-    subnet_id = "${yandex_vpc_subnet.subnet.id}"
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-```
-
-Результаты работы:
-
-1. Вывод команды terraform workspace list:
-
-```
-terraform workspace list
-  default
-  prod
-* stage
-```
-
-
-2. Вывод команды terraform plan для воркспейса prod:
-```
-terraform workspace select prod
-Switched to workspace "prod".
-
-terraform plan
-
-Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
-  + create
-
-Terraform will perform the following actions:
-
-  # yandex_compute_image.test-image will be created
-  + resource "yandex_compute_image" "test-image" {
-      + created_at      = (known after apply)
-      + folder_id       = (known after apply)
-      + id              = (known after apply)
-      + min_disk_size   = (known after apply)
-      + name            = "ubuntu-public-image"
-      + os_type         = (known after apply)
-      + pooled          = (known after apply)
-      + product_ids     = (known after apply)
-      + size            = (known after apply)
-      + source_disk     = (known after apply)
-      + source_family   = (known after apply)
-      + source_image    = "fd8fte6bebi857ortlja"
-      + source_snapshot = (known after apply)
-      + source_url      = (known after apply)
-      + status          = (known after apply)
-    }
-
-  # yandex_compute_instance.nodes_count[0] will be created
-  + resource "yandex_compute_instance" "nodes_count" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "prod-node-0"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v2"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-
-      + boot_disk {
-          + auto_delete = true
-          + device_name = (known after apply)
-          + disk_id     = (known after apply)
-          + mode        = (known after apply)
-
-          + initialize_params {
-              + block_size  = (known after apply)
-              + description = (known after apply)
-              + image_id    = (known after apply)
-              + name        = (known after apply)
-              + size        = (known after apply)
-              + snapshot_id = (known after apply)
-              + type        = "network-hdd"
-            }
-        }
-
-      + network_interface {
-          + index              = (known after apply)
-          + ip_address         = (known after apply)
-          + ipv4               = true
-          + ipv6               = (known after apply)
-          + ipv6_address       = (known after apply)
-          + mac_address        = (known after apply)
-          + nat                = (known after apply)
-          + nat_ip_address     = (known after apply)
-          + nat_ip_version     = (known after apply)
-          + security_group_ids = (known after apply)
-          + subnet_id          = (known after apply)
-        }
-
-      + placement_policy {
-          + host_affinity_rules = (known after apply)
-          + placement_group_id  = (known after apply)
-        }
-
-      + resources {
-          + core_fraction = 100
-          + cores         = 2
-          + memory        = 4
-        }
-
-      + scheduling_policy {
-          + preemptible = (known after apply)
-        }
-    }
-
-  # yandex_compute_instance.nodes_count[1] will be created
-  + resource "yandex_compute_instance" "nodes_count" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "prod-node-1"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v2"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-
-      + boot_disk {
-          + auto_delete = true
-          + device_name = (known after apply)
-          + disk_id     = (known after apply)
-          + mode        = (known after apply)
-
-          + initialize_params {
-              + block_size  = (known after apply)
-              + description = (known after apply)
-              + image_id    = (known after apply)
-              + name        = (known after apply)
-              + size        = (known after apply)
-              + snapshot_id = (known after apply)
-              + type        = "network-hdd"
-            }
-        }
-
-      + network_interface {
-          + index              = (known after apply)
-          + ip_address         = (known after apply)
-          + ipv4               = true
-          + ipv6               = (known after apply)
-          + ipv6_address       = (known after apply)
-          + mac_address        = (known after apply)
-          + nat                = (known after apply)
-          + nat_ip_address     = (known after apply)
-          + nat_ip_version     = (known after apply)
-          + security_group_ids = (known after apply)
-          + subnet_id          = (known after apply)
-        }
-
-      + placement_policy {
-          + host_affinity_rules = (known after apply)
-          + placement_group_id  = (known after apply)
-        }
-
-      + resources {
-          + core_fraction = 100
-          + cores         = 2
-          + memory        = 4
-        }
-
-      + scheduling_policy {
-          + preemptible = (known after apply)
-        }
-    }
-
-  # yandex_compute_instance.nodes_each["nodep-1"] will be created
-  + resource "yandex_compute_instance" "nodes_each" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "nodep-1"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v2"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-
-      + boot_disk {
-          + auto_delete = true
-          + device_name = (known after apply)
-          + disk_id     = (known after apply)
-          + mode        = (known after apply)
-
-          + initialize_params {
-              + block_size  = (known after apply)
-              + description = (known after apply)
-              + image_id    = (known after apply)
-              + name        = (known after apply)
-              + size        = (known after apply)
-              + snapshot_id = (known after apply)
-              + type        = "network-hdd"
-            }
-        }
-
-      + network_interface {
-          + index              = (known after apply)
-          + ip_address         = (known after apply)
-          + ipv4               = true
-          + ipv6               = (known after apply)
-          + ipv6_address       = (known after apply)
-          + mac_address        = (known after apply)
-          + nat                = (known after apply)
-          + nat_ip_address     = (known after apply)
-          + nat_ip_version     = (known after apply)
-          + security_group_ids = (known after apply)
-          + subnet_id          = (known after apply)
-        }
-
-      + placement_policy {
-          + host_affinity_rules = (known after apply)
-          + placement_group_id  = (known after apply)
-        }
-
-      + resources {
-          + core_fraction = 100
-          + cores         = 2
-          + memory        = 4
-        }
-
-      + scheduling_policy {
-          + preemptible = (known after apply)
-        }
-    }
-
-  # yandex_compute_instance.nodes_each["nodep-2"] will be created
-  + resource "yandex_compute_instance" "nodes_each" {
-      + created_at                = (known after apply)
-      + folder_id                 = (known after apply)
-      + fqdn                      = (known after apply)
-      + hostname                  = (known after apply)
-      + id                        = (known after apply)
-      + name                      = "nodep-2"
-      + network_acceleration_type = "standard"
-      + platform_id               = "standard-v2"
-      + service_account_id        = (known after apply)
-      + status                    = (known after apply)
-      + zone                      = (known after apply)
-
-      + boot_disk {
-          + auto_delete = true
-          + device_name = (known after apply)
-          + disk_id     = (known after apply)
-          + mode        = (known after apply)
-
-          + initialize_params {
-              + block_size  = (known after apply)
-              + description = (known after apply)
-              + image_id    = (known after apply)
-              + name        = (known after apply)
-              + size        = (known after apply)
-              + snapshot_id = (known after apply)
-              + type        = "network-hdd"
-            }
-        }
-
-      + network_interface {
-          + index              = (known after apply)
-          + ip_address         = (known after apply)
-          + ipv4               = true
-          + ipv6               = (known after apply)
-          + ipv6_address       = (known after apply)
-          + mac_address        = (known after apply)
-          + nat                = (known after apply)
-          + nat_ip_address     = (known after apply)
-          + nat_ip_version     = (known after apply)
-          + security_group_ids = (known after apply)
-          + subnet_id          = (known after apply)
-        }
-
-      + placement_policy {
-          + host_affinity_rules = (known after apply)
-          + placement_group_id  = (known after apply)
-        }
-
-      + resources {
-          + core_fraction = 100
-          + cores         = 2
-          + memory        = 4
-        }
-
-      + scheduling_policy {
-          + preemptible = (known after apply)
-        }
-    }
-
-  # yandex_vpc_network.net will be created
-  + resource "yandex_vpc_network" "net" {
-      + created_at                = (known after apply)
-      + default_security_group_id = (known after apply)
-      + folder_id                 = (known after apply)
-      + id                        = (known after apply)
-      + labels                    = (known after apply)
-      + name                      = (known after apply)
-      + subnet_ids                = (known after apply)
-    }
-
-  # yandex_vpc_subnet.subnet will be created
-  + resource "yandex_vpc_subnet" "subnet" {
-      + created_at     = (known after apply)
-      + folder_id      = (known after apply)
-      + id             = (known after apply)
-      + labels         = (known after apply)
-      + name           = (known after apply)
-      + network_id     = (known after apply)
-      + v4_cidr_blocks = [
-          + "192.168.1.0/24",
-        ]
-      + v6_cidr_blocks = (known after apply)
-      + zone           = "ru-central1-a"
-    }
-
-Plan: 7 to add, 0 to change, 0 to destroy.
-
-─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-Note: You didn't use the -out option to save this plan, so Terraform can't guarantee to take exactly these actions if you run "terraform apply" now.
-```
+![alt text](images/terraform_apply.png "Terraform Apply")

@@ -44,6 +44,8 @@
     src: files/alert_rules.yml
     dest: /etc/prometheus/
   tags: copy_config
+  notify:
+    - prometheus service restart
 
 - name: copy systemd service file
   copy:
